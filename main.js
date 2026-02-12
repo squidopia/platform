@@ -39,39 +39,59 @@ function getTile(x, y) {
 
 // --- COLLISION ---
 function handleCollisions(char) {
-  let left = char.x;
-  let right = char.x + char.width;
-  let top = char.y;
-  let bottom = char.y + char.height;
+  // --- check the tiles around the character ---
+  const startX = Math.floor(char.x / TILE_SIZE);
+  const endX = Math.floor((char.x + char.width) / TILE_SIZE);
+  const startY = Math.floor(char.y / TILE_SIZE);
+  const endY = Math.floor((char.y + char.height) / TILE_SIZE);
 
-  // --- Horizontal ---
-  if (char.vx < 0) { // moving left
-    if (getTile(left, top) === 1 || getTile(left, bottom-1) === 1) {
-      char.x = Math.floor(left / TILE_SIZE + 1) * TILE_SIZE;
-      char.vx = 0;
-    }
-  } else if (char.vx > 0) { // moving right
-    if (getTile(right-1, top) === 1 || getTile(right-1, bottom-1) === 1) {
-      char.x = Math.floor(right / TILE_SIZE) * TILE_SIZE - char.width;
-      char.vx = 0;
+  char.onGround = false; // reset
+
+  for (let y = startY; y <= endY; y++) {
+    for (let x = startX; x <= endX; x++) {
+      let tile = 0;
+      if (y >= 0 && y < level.length && x >= 0 && x < level[0].length) tile = level[y][x];
+
+      if (tile === 1) { // solid ground
+        const tileLeft = x * TILE_SIZE;
+        const tileRight = tileLeft + TILE_SIZE;
+        const tileTop = y * TILE_SIZE;
+        const tileBottom = tileTop + TILE_SIZE;
+
+        // horizontal collision
+        if (char.x + char.width > tileLeft && char.x < tileRight) {
+          if (char.vy > 0 && char.y + char.height > tileTop && char.y < tileTop) {
+            // landing on top
+            char.y = tileTop - char.height;
+            char.vy = 0;
+            char.onGround = true;
+          } else if (char.vy < 0 && char.y < tileBottom && char.y + char.height > tileBottom) {
+            // hitting bottom
+            char.y = tileBottom;
+            char.vy = 0;
+          }
+        }
+
+        // vertical collision
+        if (char.y + char.height > tileTop && char.y < tileBottom) {
+          if (char.vx > 0 && char.x + char.width > tileLeft && char.x < tileLeft) {
+            char.x = tileLeft - char.width;
+            char.vx = 0;
+          } else if (char.vx < 0 && char.x < tileRight && char.x + char.width > tileRight) {
+            char.x = tileRight;
+            char.vx = 0;
+          }
+        }
+      }
+
+      // hazards
+      if (tile === 2) { // lava
+        if (char === leafy) char.hp = 0; // Leafy dies
+      }
     }
   }
+}
 
-  // --- Vertical ---
-  if (char.vy > 0) { // falling
-    if (getTile(left, bottom) === 1 || getTile(right-1, bottom) === 1) {
-      char.y = Math.floor(bottom / TILE_SIZE) * TILE_SIZE - char.height;
-      char.vy = 0;
-      char.onGround = true;
-    } else {
-      char.onGround = false;
-    }
-  } else if (char.vy < 0) { // jumping
-    if (getTile(left, top) === 1 || getTile(right-1, top) === 1) {
-      char.y = Math.floor(top / TILE_SIZE + 1) * TILE_SIZE;
-      char.vy = 0;
-    }
-  }
 
   // --- Hazards ---
   let centerTile = getTile(char.x + char.width/2, char.y + char.height/2);
