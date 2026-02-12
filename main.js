@@ -1,3 +1,9 @@
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = 800; // screen width
+canvas.height = 600; // screen height
+
+
 const TILE_SIZE = 64;
 
 const level = [
