@@ -1,8 +1,7 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-canvas.width = 800; // screen width
-canvas.height = 600; // screen height
-
+canvas.width = 800;
+canvas.height = 600;
 
 const TILE_SIZE = 64;
 
@@ -28,41 +27,81 @@ function drawLevel() {
   }
 }
 
-
+// --- Characters ---
 let firey = {
-  x: 100,
-  y: 100,
-  vx: 0,
-  vy: 0,
-  width: 48,
-  height: 48,
-  speed: 8,
-  jumpHeight: 4,
-  hp: 4,
-  color: "orange"
+  x: 100, y: 100, vx: 0, vy: 0,
+  width: 48, height: 48,
+  speed: 8, jumpHeight: 4, hp: 4,
+  color: "orange", onGround: false
 };
 
 let leafy = {
-  x: 150,
-  y: 100,
-  vx: 0,
-  vy: 0,
-  width: 48,
-  height: 48,
-  speed: 9,
-  jumpHeight: 6,
-  hp: 3,
-  color: "green"
+  x: 150, y: 100, vx: 0, vy: 0,
+  width: 48, height: 48,
+  speed: 9, jumpHeight: 6, hp: 3,
+  color: "green", onGround: false
 };
 
-let activeCharacter = firey; // start controlling Firey
-
+let activeCharacter = firey;
 
 const keys = {};
-
 window.addEventListener("keydown", (e) => keys[e.key] = true);
 window.addEventListener("keyup", (e) => keys[e.key] = false);
 
+// --- Tile helper ---
+function getTile(x, y) {
+  let tx = Math.floor(x / TILE_SIZE);
+  let ty = Math.floor(y / TILE_SIZE);
+  if (ty < 0 || ty >= level.length || tx < 0 || tx >= level[0].length) return 0;
+  return level[ty][tx];
+}
+
+// --- Collision ---
+function handleCollisions(char) {
+  // corners
+  let left = char.x;
+  let right = char.x + char.width;
+  let top = char.y;
+  let bottom = char.y + char.height;
+
+  // --- Horizontal ---
+  if (char.vx < 0) { // moving left
+    if (getTile(left, top) === 1 || getTile(left, bottom-1) === 1) {
+      char.x = Math.floor(left / TILE_SIZE + 1) * TILE_SIZE;
+      char.vx = 0;
+    }
+  } else if (char.vx > 0) { // moving right
+    if (getTile(right-1, top) === 1 || getTile(right-1, bottom-1) === 1) {
+      char.x = Math.floor(right / TILE_SIZE) * TILE_SIZE - char.width;
+      char.vx = 0;
+    }
+  }
+
+  // --- Vertical ---
+  if (char.vy > 0) { // falling
+    if (getTile(left, bottom) === 1 || getTile(right-1, bottom) === 1) {
+      char.y = Math.floor(bottom / TILE_SIZE) * TILE_SIZE - char.height;
+      char.vy = 0;
+      char.onGround = true;
+    } else {
+      char.onGround = false;
+    }
+  } else if (char.vy < 0) { // jumping up
+    if (getTile(left, top) === 1 || getTile(right-1, top) === 1) {
+      char.y = Math.floor(top / TILE_SIZE + 1) * TILE_SIZE;
+      char.vy = 0;
+    }
+  }
+
+  // --- Hazards ---
+  let centerTile = getTile(char.x + char.width/2, char.y + char.height/2);
+  if (centerTile === 2) { // lava
+    if (char === leafy) char.hp = 0; // Leafy dies
+    // Firey is immune
+  }
+}
+
+// --- Update ---
 function update() {
   // movement
   if (keys["ArrowLeft"]) activeCharacter.vx = -activeCharacter.speed;
@@ -80,15 +119,16 @@ function update() {
   activeCharacter.x += activeCharacter.vx;
   activeCharacter.y += activeCharacter.vy;
 
-  // TODO: collision with tiles
+  handleCollisions(activeCharacter);
 }
 
+// --- Draw character ---
 function drawCharacter(char) {
   ctx.fillStyle = char.color;
   ctx.fillRect(char.x, char.y, char.width, char.height);
 }
 
-
+// --- Main loop ---
 function loop() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   drawLevel();
