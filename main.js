@@ -1,8 +1,16 @@
+// --- CANVAS SETUP ---
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-canvas.width = 800;
-canvas.height = 600;
 
+// Fullscreen canvas
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// --- TILE & LEVEL SETUP ---
 const TILE_SIZE = 64;
 
 const level = [
@@ -12,43 +20,16 @@ const level = [
 ];
 // 0 = empty, 1 = ground, 2 = lava
 
-function drawLevel() {
-  for (let y = 0; y < level.length; y++) {
-    for (let x = 0; x < level[y].length; x++) {
-      let tile = level[y][x];
-      if (tile === 1) {
-        ctx.fillStyle = "#8B4513"; // ground brown
-        ctx.fillRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      } else if (tile === 2) {
-        ctx.fillStyle = "#FF4500"; // lava red
-        ctx.fillRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      }
-    }
-  }
-}
-
-// --- Characters ---
-let firey = {
-  x: 100, y: 100, vx: 0, vy: 0,
-  width: 48, height: 48,
-  speed: 8, jumpHeight: 4, hp: 4,
-  color: "orange", onGround: false
-};
-
-let leafy = {
-  x: 150, y: 100, vx: 0, vy: 0,
-  width: 48, height: 48,
-  speed: 9, jumpHeight: 6, hp: 3,
-  color: "green", onGround: false
-};
-
+// --- CHARACTERS ---
+let firey = { x:100, y:100, vx:0, vy:0, width:48, height:48, speed:8, jumpHeight:4, hp:4, color:"orange", onGround:false };
+let leafy = { x:150, y:100, vx:0, vy:0, width:48, height:48, speed:9, jumpHeight:6, hp:3, color:"green", onGround:false };
 let activeCharacter = firey;
 
 const keys = {};
 window.addEventListener("keydown", (e) => keys[e.key] = true);
 window.addEventListener("keyup", (e) => keys[e.key] = false);
 
-// --- Tile helper ---
+// --- TILE HELPER ---
 function getTile(x, y) {
   let tx = Math.floor(x / TILE_SIZE);
   let ty = Math.floor(y / TILE_SIZE);
@@ -56,9 +37,8 @@ function getTile(x, y) {
   return level[ty][tx];
 }
 
-// --- Collision ---
+// --- COLLISION ---
 function handleCollisions(char) {
-  // corners
   let left = char.x;
   let right = char.x + char.width;
   let top = char.y;
@@ -86,7 +66,7 @@ function handleCollisions(char) {
     } else {
       char.onGround = false;
     }
-  } else if (char.vy < 0) { // jumping up
+  } else if (char.vy < 0) { // jumping
     if (getTile(left, top) === 1 || getTile(right-1, top) === 1) {
       char.y = Math.floor(top / TILE_SIZE + 1) * TILE_SIZE;
       char.vy = 0;
@@ -97,13 +77,32 @@ function handleCollisions(char) {
   let centerTile = getTile(char.x + char.width/2, char.y + char.height/2);
   if (centerTile === 2) { // lava
     if (char === leafy) char.hp = 0; // Leafy dies
-    // Firey is immune
   }
 }
 
-// --- Update ---
+// --- DRAW LEVEL ---
+function drawLevel(cameraX, cameraY) {
+  for (let y = 0; y < level.length; y++) {
+    for (let x = 0; x < level[y].length; x++) {
+      let tile = level[y][x];
+      if (tile === 1) ctx.fillStyle = "#8B4513"; // ground brown
+      else if (tile === 2) ctx.fillStyle = "#FF4500"; // lava
+      else continue;
+
+      ctx.fillRect(x*TILE_SIZE - cameraX, y*TILE_SIZE - cameraY, TILE_SIZE, TILE_SIZE);
+    }
+  }
+}
+
+// --- DRAW CHARACTER ---
+function drawCharacter(char, cameraX, cameraY) {
+  ctx.fillStyle = char.color;
+  ctx.fillRect(char.x - cameraX, char.y - cameraY, char.width, char.height);
+}
+
+// --- UPDATE ---
 function update() {
-  // movement
+  // horizontal movement
   if (keys["ArrowLeft"]) activeCharacter.vx = -activeCharacter.speed;
   else if (keys["ArrowRight"]) activeCharacter.vx = activeCharacter.speed;
   else activeCharacter.vx = 0;
@@ -115,25 +114,25 @@ function update() {
   }
 
   // gravity
-  activeCharacter.vy += 1; // gravity
+  activeCharacter.vy += 1;
   activeCharacter.x += activeCharacter.vx;
   activeCharacter.y += activeCharacter.vy;
 
   handleCollisions(activeCharacter);
 }
 
-// --- Draw character ---
-function drawCharacter(char) {
-  ctx.fillStyle = char.color;
-  ctx.fillRect(char.x, char.y, char.width, char.height);
-}
-
-// --- Main loop ---
+// --- MAIN LOOP + SCROLLING ---
 function loop() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawLevel();
-  drawCharacter(activeCharacter);
   update();
+
+  // camera follows character
+  let cameraX = activeCharacter.x - canvas.width/2 + activeCharacter.width/2;
+  let cameraY = activeCharacter.y - canvas.height/2 + activeCharacter.height/2;
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawLevel(cameraX, cameraY);
+  drawCharacter(activeCharacter, cameraX, cameraY);
+
   requestAnimationFrame(loop);
 }
 
