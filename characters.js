@@ -23,7 +23,7 @@ export function spawnCharacter(char, startX = 0) {
   char.y = 0;
 }
 
-// initialize spawn
+// initialize spawnsss
 spawnCharacter(characters.firey, 0);
 spawnCharacter(characters.leafy, 1);
 
