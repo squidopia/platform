@@ -4,13 +4,54 @@
 <meta charset="UTF-8">
 <title>Platformer Level Editor</title>
 <style>
-  body { margin: 0; display: flex; font-family: sans-serif; }
-  #editor { border: 1px solid black; background: #87CEEB; cursor: crosshair; }
-  #tilePalette { margin-left: 20px; }
-  .tile { width: 40px; height: 40px; display: inline-block; margin: 2px; cursor: pointer; border: 1px solid #333; }
-  button, input { margin-top: 10px; display: block; padding: 5px; cursor: pointer; }
-  h3 { margin-top: 0; }
+  body { 
+    margin: 0; 
+    display: flex; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background: #f0f4f8; 
+    color: #333;
+  }
+  #editor { 
+    border: 2px solid #555; 
+    background: #87CEEB; 
+    cursor: crosshair; 
+    image-rendering: pixelated; 
+  }
+  #tilePalette { 
+    margin-left: 20px; 
+    padding: 10px; 
+    background: #fff; 
+    box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+    border-radius: 10px; 
+  }
+  .tile { 
+    width: 36px; 
+    height: 36px; 
+    display: inline-block; 
+    margin: 2px; 
+    cursor: pointer; 
+    border: 2px solid #ccc; 
+    border-radius: 6px; 
+    transition: all 0.2s; 
+  }
+  .tile:hover { 
+    border-color: #000; 
+    transform: scale(1.05); 
+  }
+  button, input { 
+    margin-top: 10px; 
+    display: block; 
+    padding: 6px 10px; 
+    cursor: pointer; 
+    border-radius: 6px; 
+    border: 1px solid #aaa; 
+    background: #e1e5ea; 
+    transition: 0.2s; 
+  }
+  button:hover, input:hover { background: #d1d5da; }
+  h3 { margin-top: 0; text-align: center; }
   label { display: block; margin-top: 10px; }
+  p { font-size: 0.9em; color: #555; }
 </style>
 </head>
 <body>
@@ -26,42 +67,46 @@
   <button id="resizeBtn">Resize Map</button>
 
   <button id="copyBtn">Copy Level Array</button>
-  <p>Click a tile to select, then click/drag on the grid to draw. Tiles stay fixed size!</p>
+  <p>Click a tile to select, then click or drag on the grid to draw. Tiles stay fixed size!</p>
 </div>
 
 <script>
 const canvas = document.getElementById("editor");
 const ctx = canvas.getContext("2d");
 
-const TILE_SIZE = 32; // fixed size
+const TILE_SIZE = 32; 
 let ROWS = 12;
 let COLS = 20;
 canvas.width = COLS * TILE_SIZE;
 canvas.height = ROWS * TILE_SIZE;
 
+// --- New & updated tile types ---
 const TILE_TYPES = {
-  0: "#87CEEB", // empty
-  10: "#8B0000", // dark red
-  11: "#000000", // black
-  12: "#8B4513", // brown
-  13: "#008000", // green
-  20: "#FF4500", // lava
-  21: "#1E90FF", // water
-  22: "#808080"  // spikes
+  0: "#87CEEB",   // empty (sky)
+  10: "#8B0000",  // dark red
+  11: "#000000",  // black
+  12: "#8B4513",  // brown
+  13: "#008000",  // green
+  20: "#FF4500",  // lava
+  21: "#1E90FF",  // water
+  22: "#808080",  // spikes
+  30: "#FFD700",  // gold block
+  31: "#FF69B4"   // pink platform
 };
 
 let currentTile = 10;
 let level = Array.from({length: ROWS}, () => Array(COLS).fill(0));
 let drawing = false;
 
-// --- Draw grid ---
+// --- Draw grid with cleaner lines ---
 function drawGrid() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
-      ctx.fillStyle = TILE_TYPES[level[y][x]];
+      ctx.fillStyle = TILE_TYPES[level[y][x]] || "#000";
       ctx.fillRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      ctx.strokeStyle = "#333";
+      ctx.strokeStyle = "rgba(0,0,0,0.15)";
+      ctx.lineWidth = 1;
       ctx.strokeRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
   }
@@ -109,7 +154,7 @@ for (let key in TILE_TYPES) {
 
 // --- Copy to clipboard ---
 document.getElementById("copyBtn").addEventListener("click", async () => {
-  const arrayText = JSON.stringify(level); // compact 2D array
+  const arrayText = JSON.stringify(level, null, 2); // pretty print
   try {
     await navigator.clipboard.writeText(arrayText);
     alert("Level array copied to clipboard!");
