@@ -10,9 +10,9 @@ const PHYSICS = {
   gravityLiquid: 0.08,
   maxFallSpeed: 10,
 
-  groundFriction: 0.85,
-  airFriction: 0.98,
-  liquidDrag: 0.92,
+  groundFriction: 0.6,
+  airFriction: 0.6,
+  liquidDrag: 0.3,
 
   coyoteTime: 6,        // frames allowed to jump after leaving ground
   jumpBufferTime: 6     // frames jump input is remembered
