@@ -43,21 +43,28 @@ export function moveCharacter() {
   const endX = Math.floor((char.x + char.width) / TILE_SIZE);
   const startY = Math.floor(char.y / TILE_SIZE);
   const endY = Math.floor((char.y + char.height) / TILE_SIZE);
+
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
-      if (getTile(x*TILE_SIZE, y*TILE_SIZE) === 2) char.hp = 0;
+      const tile = getTile(x*TILE_SIZE, y*TILE_SIZE);
+      if (tile === 20) char.hp = 0; // lava kills
+      // water (21) and spawn (30) are fall-through, so no collision effect
     }
   }
 }
 
+// Only solid tiles block movement
 function isColliding(char, x, y) {
   const startX = Math.floor(x / TILE_SIZE);
   const endX = Math.floor((x + char.width) / TILE_SIZE);
   const startY = Math.floor(y / TILE_SIZE);
   const endY = Math.floor((y + char.height) / TILE_SIZE);
+
   for (let ty = startY; ty <= endY; ty++) {
     for (let tx = startX; tx <= endX; tx++) {
-      if (getTile(tx*TILE_SIZE, ty*TILE_SIZE) !== 0) return true;
+      const tile = getTile(tx*TILE_SIZE, ty*TILE_SIZE);
+      if (tile >= 10 && tile <= 13) return true; // solid blocks
+      // tiles 20 (lava), 21 (water), 30 (spawn) do NOT block
     }
   }
   return false;
