@@ -8,11 +8,22 @@ window.addEventListener("keyup", e => keys[e.key] = false);
 // --- Character switching ---
 window.addEventListener("keydown", e => {
   if (e.key.toLowerCase() === "q") {
-    // toggle between Firey and Leafy
-    if (gameState.activeCharacter === characters.firey) gameState.activeCharacter = characters.leafy;
-    else gameState.activeCharacter = characters.pin;
+    // Create an array of characters to cycle through
+    const cycle = [characters.firey, characters.leafy];
+
+    // Only include Pin if it exists
+    if (characters.pin) cycle.push(characters.pin);
+
+    // Find current character index
+    const currentIndex = cycle.indexOf(gameState.activeCharacter);
+
+    // Move to next character (wrap around)
+    const nextIndex = (currentIndex + 1) % cycle.length;
+
+    gameState.activeCharacter = cycle[nextIndex];
   }
 });
+
 
 export function updateControls() {
   const char = gameState.activeCharacter;
