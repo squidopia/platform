@@ -1,4 +1,4 @@
-export const TILE_SIZE = 64;
+export const TILE_SIZE = 32;
 
 // Your level array
 export let level = [
