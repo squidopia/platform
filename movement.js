@@ -2,94 +2,121 @@ import { getTile, TILE_SIZE } from './level.js';
 import { gameState, characters } from './characters.js';
 
 const keys = {};
-window.addEventListener("keydown", e => keys[e.key] = true);
-window.addEventListener("keyup", e => keys[e.key] = false);
+window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
 // --- Character switching ---
 window.addEventListener("keydown", e => {
   if (e.key.toLowerCase() === "q") {
-    // Create an array of characters to cycle through
     const cycle = [characters.firey, characters.leafy];
-
-    // Only include Pin if it exists
     if (characters.pin) cycle.push(characters.pin);
 
-    // Find current character index
     const currentIndex = cycle.indexOf(gameState.activeCharacter);
-
-    // Move to next character (wrap around)
     const nextIndex = (currentIndex + 1) % cycle.length;
-
     gameState.activeCharacter = cycle[nextIndex];
   }
 });
 
-
+// --- Controls ---
 export function updateControls() {
   const char = gameState.activeCharacter;
   char.vx = 0;
 
-  // arrows or WASD support
-  if (keys["ArrowLeft"] || keys["a"]) char.vx = -char.speed;
-  if (keys["ArrowRight"] || keys["d"]) char.vx = char.speed;
+  // arrows or WASD
+  if (keys["arrowleft"] || keys["a"]) char.vx = -char.speed;
+  if (keys["arrowright"] || keys["d"]) char.vx = char.speed;
 
-  // jump
-  if ((keys[" "] || keys["w"] || keys["ArrowUp"]) && char.onGround) {
+  // jump (only if on ground or swimming)
+  if ((keys[" "] || keys["w"] || keys["arrowup"]) && (char.onGround || char.inWater || char.inLava)) {
     char.vy = -char.jumpHeight;
     char.onGround = false;
   }
 }
 
+// --- Movement and collision ---
 export function moveCharacter() {
   const char = gameState.activeCharacter;
 
-  // horizontal
-  let newX = char.x + char.vx;
-  if (!isColliding(char, newX, char.y)) char.x = newX;
-  else char.vx = 0;
+  // Apply gravity
+  const GRAVITY = char.inWater || char.inLava ? 0.3 : 1; // float slower in liquid
+  char.vy += GRAVITY;
 
-  // vertical (gravity)
-  char.vy += 1;
-  let newY = char.y + char.vy;
-  if (!isColliding(char, char.x, newY)) {
-    char.y = newY;
-    char.onGround = false;
-  } else {
-    if (char.vy > 0) char.onGround = true;
-    char.vy = 0;
-  }
+  // Horizontal movement + collision
+  moveAxis(char, char.vx, 0);
 
-  // friction on ground
+  // Vertical movement + collision
+  moveAxis(char, 0, char.vy);
+
+  // Friction if on ground
   if (char.onGround) char.vx *= 0.8;
 
-  // hazards
-  const startX = Math.floor(char.x / TILE_SIZE);
-  const endX = Math.floor((char.x + char.width) / TILE_SIZE);
-  const startY = Math.floor(char.y / TILE_SIZE);
-  const endY = Math.floor((char.y + char.height) / TILE_SIZE);
+  // Reset hazard flags
+  char.inWater = false;
+  char.inLava = false;
 
-  for (let y = startY; y <= endY; y++) {
-    for (let x = startX; x <= endX; x++) {
-      const tile = getTile(x*TILE_SIZE, y*TILE_SIZE);
-      if (tile === 20) char.hp = 0; // lava kills
-      // water (21) and spawn (30) are fall-through
-    }
-  }
+  // Check hazards & water/lava swimming
+  handleHazards(char);
 }
 
-// Only solid blocks (10-13) block movement
-function isColliding(char, x, y) {
-  const startX = Math.floor(x / TILE_SIZE);
-  const endX = Math.floor((x + char.width) / TILE_SIZE);
-  const startY = Math.floor(y / TILE_SIZE);
-  const endY = Math.floor((y + char.height) / TILE_SIZE);
+// --- Axis movement helper ---
+function moveAxis(char, vx, vy) {
+  let newX = char.x + vx;
+  let newY = char.y + vy;
+
+  const startX = Math.floor(newX / TILE_SIZE);
+  const endX = Math.floor((newX + char.width - 1) / TILE_SIZE);
+  const startY = Math.floor(newY / TILE_SIZE);
+  const endY = Math.floor((newY + char.height - 1) / TILE_SIZE);
+
+  let collided = false;
 
   for (let ty = startY; ty <= endY; ty++) {
     for (let tx = startX; tx <= endX; tx++) {
       const tile = getTile(tx*TILE_SIZE, ty*TILE_SIZE);
-      if (tile >= 10 && tile <= 13) return true; // solid blocks
-      // tiles 20 (lava), 21 (water), 30 (spawn) do NOT block
+
+      if (tile >= 10 && tile <= 13) { // solid blocks
+        collided = true;
+      }
     }
   }
-  return false;
+
+  if (!collided) {
+    char.x = newX;
+    char.y = newY;
+    char.onGround = false;
+  } else {
+    // stop vertical movement if colliding
+    if (vy > 0) char.onGround = true;
+    if (vy !== 0) char.vy = 0;
+    if (vx !== 0) char.vx = 0;
+  }
+}
+
+// --- Hazard handling ---
+function handleHazards(char) {
+  const startX = Math.floor(char.x / TILE_SIZE);
+  const endX = Math.floor((char.x + char.width - 1) / TILE_SIZE);
+  const startY = Math.floor(char.y / TILE_SIZE);
+  const endY = Math.floor((char.y + char.height - 1) / TILE_SIZE);
+
+  for (let y = startY; y <= endY; y++) {
+    for (let x = startX; x <= endX; x++) {
+      const tile = getTile(x*TILE_SIZE, y*TILE_SIZE);
+
+      switch (tile) {
+        case 20: // lava
+          if (char.name.toLowerCase() !== "firey") char.hp = 0; // lava kills non-firey
+          else char.inLava = true; // firey floats in lava
+          break;
+        case 21: // water
+          if (char.name.toLowerCase() === "firey") char.hp = 0; // firey dies in water
+          else char.inWater = true;
+          break;
+        case 22: // spikes
+          char.hp -= 1; // spikes deal 1 damage per frame touched
+          break;
+        // spawn tile (30) does nothing
+      }
+    }
+  }
 }
