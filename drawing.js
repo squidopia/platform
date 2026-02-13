@@ -12,6 +12,7 @@ const TILE_COLORS = {
   20: "#FF4500",  // lava
   21: "#1E90FF",  // water
   22: "#808080",  // gray (spikes later)
+  30: "#FFFF00"   // spawn tile
 };
 
 export function drawLevel(cameraX, cameraY) {
@@ -20,7 +21,7 @@ export function drawLevel(cameraX, cameraY) {
       const tile = level[y][x];
       if (tile === 0) continue;
 
-      // Use the color map, default to pink for unknown tilessss
+      // Use the color map, default to pink for unknown tiles
       ctx.fillStyle = TILE_COLORS[tile] || "#FF69B4";
       ctx.fillRect(
         x * TILE_SIZE - cameraX,
@@ -28,6 +29,19 @@ export function drawLevel(cameraX, cameraY) {
         TILE_SIZE,
         TILE_SIZE
       );
+
+      // Optional: draw a circle on spawn tile for clarity
+      if (tile === 30) {
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(
+          x * TILE_SIZE - cameraX + TILE_SIZE/2,
+          y * TILE_SIZE - cameraY + TILE_SIZE/2,
+          TILE_SIZE/4,
+          0, Math.PI*2
+        );
+        ctx.fill();
+      }
     }
   }
 }
