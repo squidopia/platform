@@ -1,16 +1,29 @@
 import { getTile, TILE_SIZE } from './level.js';
-import { gameState } from './characters.js';
+import { gameState, characters } from './characters.js';
 
 const keys = {};
 window.addEventListener("keydown", e => keys[e.key] = true);
 window.addEventListener("keyup", e => keys[e.key] = false);
 
+// --- Character switching ---
+window.addEventListener("keydown", e => {
+  if (e.key.toLowerCase() === "q") {
+    // toggle between Firey and Leafy
+    if (gameState.activeCharacter === characters.firey) gameState.activeCharacter = characters.leafy;
+    else gameState.activeCharacter = characters.firey;
+  }
+});
+
 export function updateControls() {
   const char = gameState.activeCharacter;
   char.vx = 0;
-  if (keys["ArrowLeft"]) char.vx = -char.speed;
-  if (keys["ArrowRight"]) char.vx = char.speed;
-  if (keys[" "] && char.onGround) {
+
+  // arrows or WASD support
+  if (keys["ArrowLeft"] || keys["a"]) char.vx = -char.speed;
+  if (keys["ArrowRight"] || keys["d"]) char.vx = char.speed;
+
+  // jump
+  if ((keys[" "] || keys["w"] || keys["ArrowUp"]) && char.onGround) {
     char.vy = -char.jumpHeight;
     char.onGround = false;
   }
@@ -24,8 +37,8 @@ export function moveCharacter() {
   if (!isColliding(char, newX, char.y)) char.x = newX;
   else char.vx = 0;
 
-  // vertical
-  char.vy += 1; // gravity
+  // vertical (gravity)
+  char.vy += 1;
   let newY = char.y + char.vy;
   if (!isColliding(char, char.x, newY)) {
     char.y = newY;
@@ -35,7 +48,7 @@ export function moveCharacter() {
     char.vy = 0;
   }
 
-  // friction
+  // friction on ground
   if (char.onGround) char.vx *= 0.8;
 
   // hazards
@@ -48,12 +61,12 @@ export function moveCharacter() {
     for (let x = startX; x <= endX; x++) {
       const tile = getTile(x*TILE_SIZE, y*TILE_SIZE);
       if (tile === 20) char.hp = 0; // lava kills
-      // water (21) and spawn (30) are fall-through, so no collision effect
+      // water (21) and spawn (30) are fall-through
     }
   }
 }
 
-// Only solid tiles block movement
+// Only solid blocks (10-13) block movement
 function isColliding(char, x, y) {
   const startX = Math.floor(x / TILE_SIZE);
   const endX = Math.floor((x + char.width) / TILE_SIZE);
