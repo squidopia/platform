@@ -6,6 +6,14 @@ export const characters = {
   pin: { name:"Pin", width:36, height:57, speed:7, jumpHeight:20, hp:5, image:"../assets/pin.png", vx:0, vy:0, x:0, y:0, onGround:false }
 };
 
+// Preload images
+for (let key in characters) {
+  const char = characters[key];
+  char._img = new Image();
+  char._img.src = char.image;
+}
+
+
 export const gameState = {
   activeCharacter: characters.firey
 };
