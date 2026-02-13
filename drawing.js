@@ -50,9 +50,24 @@ export function drawCharacters(cameraX, cameraY) {
   for (let key in characters) {
     const char = characters[key];
 
-    // Character rectangle
-    ctx.fillStyle = char.color;
-    ctx.fillRect(char.x - cameraX, char.y - cameraY, char.width, char.height);
+    // If character has an image, draw it
+    if (char.image) {
+      if (!char._img) {
+        char._img = new Image();
+        char._img.src = char.image;
+      }
+      ctx.drawImage(
+        char._img,
+        char.x - cameraX,
+        char.y - cameraY,
+        char.width,
+        char.height
+      );
+    } else {
+      // Character rectangle fallback
+      ctx.fillStyle = char.color;
+      ctx.fillRect(char.x - cameraX, char.y - cameraY, char.width, char.height);
+    }
 
     // HP bar
     ctx.fillStyle = "red";
