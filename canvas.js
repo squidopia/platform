@@ -7,3 +7,5 @@ export function resizeCanvas() {
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
+
+// sss
