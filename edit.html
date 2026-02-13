@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Platformer Level Editor</title>
+<style>
+  body { margin: 0; display: flex; font-family: sans-serif; }
+  #editor { border: 1px solid black; background: #87CEEB; }
+  #tilePalette { margin-left: 20px; }
+  .tile { width: 40px; height: 40px; display: inline-block; margin: 2px; cursor: pointer; border: 1px solid #333; }
+  button { margin-top: 10px; display: block; padding: 5px 10px; cursor: pointer; }
+  h3 { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<canvas id="editor"></canvas>
+
+<div id="tilePalette">
+  <h3>Tile Palette</h3>
+  <div id="tiles"></div>
+  <button id="export">Export Level Array</button>
+  <p>Click a tile to select, then click grid to place. Drag to draw multiple tiles.</p>
+</div>
+
+<script>
+const canvas = document.getElementById("editor");
+const ctx = canvas.getContext("2d");
+
+const TILE_SIZE = 40;
+const ROWS = 12;
+const COLS = 20;
+canvas.width = COLS * TILE_SIZE;
+canvas.height = ROWS * TILE_SIZE;
+
+// Tile ID → color
+const TILE_TYPES = {
+  0: "#87CEEB", // empty
+  10: "#8B0000", // dark red
+  11: "#000000", // black
+  12: "#8B4513", // brown
+  13: "#008000", // green
+  20: "#FF4500", // lava
+  21: "#1E90FF", // water
+  22: "#808080"  // spikes
+};
+
+let currentTile = 10; // default selected tile
+let level = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+let drawing = false;
+
+// --- Draw grid ---
+function drawGrid() {
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      ctx.fillStyle = TILE_TYPES[level[y][x]];
+      ctx.fillRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+      ctx.strokeStyle = "#333";
+      ctx.strokeRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    }
+  }
+}
+drawGrid();
+
+// --- Place tile ---
+function placeTile(x, y) {
+  if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+    level[y][x] = currentTile;
+    drawGrid();
+  }
+}
+
+// --- Mouse events ---
+canvas.addEventListener("mousedown", e => {
+  drawing = true;
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left)/TILE_SIZE);
+  const y = Math.floor((e.clientY - rect.top)/TILE_SIZE);
+  placeTile(x, y);
+});
+
+canvas.addEventListener("mousemove", e => {
+  if (!drawing) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left)/TILE_SIZE);
+  const y = Math.floor((e.clientY - rect.top)/TILE_SIZE);
+  placeTile(x, y);
+});
+
+canvas.addEventListener("mouseup", () => drawing = false);
+canvas.addEventListener("mouseleave", () => drawing = false);
+
+// --- Tile palette ---
+const tilesDiv = document.getElementById("tiles");
+for (let key in TILE_TYPES) {
+  const div = document.createElement("div");
+  div.classList.add("tile");
+  div.style.backgroundColor = TILE_TYPES[key];
+  div.title = `Tile ${key}`;
+  div.addEventListener("click", () => currentTile = parseInt(key));
+  tilesDiv.appendChild(div);
+}
+
+// --- Export button ---
+document.getElementById("export").addEventListener("click", () => {
+  console.log("Level array:");
+  console.log(JSON.stringify(level, null, 2));
+  alert("Level array copied to console!");
+});
+</script>
+
+</body>
+</html>
