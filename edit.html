@@ -5,11 +5,12 @@
 <title>Platformer Level Editor</title>
 <style>
   body { margin: 0; display: flex; font-family: sans-serif; }
-  #editor { border: 1px solid black; background: #87CEEB; }
+  #editor { border: 1px solid black; background: #87CEEB; cursor: crosshair; }
   #tilePalette { margin-left: 20px; }
   .tile { width: 40px; height: 40px; display: inline-block; margin: 2px; cursor: pointer; border: 1px solid #333; }
-  button { margin-top: 10px; display: block; padding: 5px 10px; cursor: pointer; }
+  button, input { margin-top: 10px; display: block; padding: 5px; cursor: pointer; }
   h3 { margin-top: 0; }
+  label { display: block; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -19,17 +20,22 @@
 <div id="tilePalette">
   <h3>Tile Palette</h3>
   <div id="tiles"></div>
-  <button id="export">Export Level Array</button>
-  <p>Click a tile to select, then click grid to place. Drag to draw multiple tiles.</p>
+
+  <label>Width: <input type="number" id="widthInput" min="5" max="100" value="20"></label>
+  <label>Height: <input type="number" id="heightInput" min="5" max="100" value="12"></label>
+  <button id="resizeBtn">Resize Map</button>
+
+  <button id="copyBtn">Copy Level Array</button>
+  <p>Click a tile to select, then click/drag on the grid to draw. Clipboard copies 2D array directly!</p>
 </div>
 
 <script>
 const canvas = document.getElementById("editor");
 const ctx = canvas.getContext("2d");
-
 const TILE_SIZE = 40;
-const ROWS = 12;
-const COLS = 20;
+
+let ROWS = 12;
+let COLS = 20;
 canvas.width = COLS * TILE_SIZE;
 canvas.height = ROWS * TILE_SIZE;
 
@@ -45,11 +51,11 @@ const TILE_TYPES = {
   22: "#808080"  // spikes
 };
 
-let currentTile = 10; // default selected tile
+let currentTile = 10;
 let level = Array.from({length: ROWS}, () => Array(COLS).fill(0));
 let drawing = false;
 
-// --- Draw grid ---
+// --- Draw the grid ---
 function drawGrid() {
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
@@ -101,11 +107,33 @@ for (let key in TILE_TYPES) {
   tilesDiv.appendChild(div);
 }
 
-// --- Export button ---
-document.getElementById("export").addEventListener("click", () => {
-  console.log("Level array:");
-  console.log(JSON.stringify(level, null, 2));
-  alert("Level array copied to console!");
+// --- Copy to clipboard ---
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const arrayText = JSON.stringify(level, null, 2);
+  try {
+    await navigator.clipboard.writeText(arrayText);
+    alert("Level array copied to clipboard!");
+  } catch(e) {
+    alert("Failed to copy. Open in secure context (https or localhost).");
+  }
+});
+
+// --- Resize map ---
+document.getElementById("resizeBtn").addEventListener("click", () => {
+  const newWidth = parseInt(document.getElementById("widthInput").value);
+  const newHeight = parseInt(document.getElementById("heightInput").value);
+
+  const newLevel = Array.from({length: newHeight}, (_, y) =>
+    Array.from({length: newWidth}, (_, x) => (level[y] && level[y][x]) || 0)
+  );
+
+  ROWS = newHeight;
+  COLS = newWidth;
+  level = newLevel;
+
+  canvas.width = COLS * TILE_SIZE;
+  canvas.height = ROWS * TILE_SIZE;
+  drawGrid();
 });
 </script>
 
