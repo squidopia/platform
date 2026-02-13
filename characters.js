@@ -1,10 +1,12 @@
 import { level, TILE_SIZE, getTile } from './level.js';
 
+// characters.js
 export const characters = {
-  firey: { name:"Firey", width:36, height:48, speed:8, jumpHeight:18, hp:4, image:"../assets/firey.png", vx:0, vy:0, x:0, y:0, onGround:false },
-  leafy: { name:"Leafy", width:36, height:64, speed:9, jumpHeight:22, hp:3, image:"../assets/leafy.png", vx:0, vy:0, x:0, y:0, onGround:false },
-  pin: { name:"Pin", width:36, height:57, speed:7, jumpHeight:20, hp:5, image:"../assets/pin.png", vx:0, vy:0, x:0, y:0, onGround:false }
+  firey: { name:"Firey", width:36, height:48, speed:8, jumpHeight:18, hp:4, image:"assets/firey.png", vx:0, vy:0, x:0, y:0, onGround:false },
+  leafy: { name:"Leafy", width:36, height:64, speed:9, jumpHeight:22, hp:3, image:"assets/leafy.png", vx:0, vy:0, x:0, y:0, onGround:false },
+  pin: { name:"Pin", width:36, height:57, speed:7, jumpHeight:20, hp:5, image:"assets/pin.png", vx:0, vy:0, x:0, y:0, onGround:false }
 };
+
 
 // Preload images
 for (let key in characters) {
