@@ -48,7 +48,7 @@ export function moveCharacter() {
   moveAxis(char, 0, char.vy);
 
   // Friction if on ground
-  if (char.onGround) char.vx *= 0.3;
+  if (char.onGround) char.vx *= 0.7;
 
   // Reset hazard flags
   char.inWater = false;
