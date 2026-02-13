@@ -1,17 +1,29 @@
 import { TILE_SIZE, level } from './level.js';
 
+// Character definitions
 export const characters = {
   firey: { name:"Firey", width:48, height:48, speed:8, jumpHeight:18, hp:4, color:"orange", vx:0, vy:0, x:0, y:0, onGround:false },
   leafy: { name:"Leafy", width:48, height:48, speed:9, jumpHeight:22, hp:3, color:"green", vx:0, vy:0, x:0, y:0, onGround:false }
 };
 
-// wrapper object for cross-module mutation
+// Cross-module wrapper
 export const gameState = {
   activeCharacter: characters.firey
 };
 
-// spawn above ground
+// --- Spawn logic ---
+// If there's a tile '30', spawn on it. Otherwise fallback to above-ground spawn.
 export function spawnCharacter(char, startX = 0) {
+  // look for a '30' tile in the level first
+  for (let y = 0; y < level.length; y++) {
+    if (level[y][startX] === 30) {
+      char.x = startX * TILE_SIZE + (TILE_SIZE - char.width)/2;
+      char.y = y * TILE_SIZE;
+      return;
+    }
+  }
+
+  // fallback: spawn above first ground tile (1) if no spawn tile
   for (let y = 0; y < level.length; y++) {
     if (level[y][startX] === 0 && level[y+1] && level[y+1][startX] === 1) {
       char.x = startX * TILE_SIZE + (TILE_SIZE - char.width)/2;
@@ -19,14 +31,17 @@ export function spawnCharacter(char, startX = 0) {
       return;
     }
   }
+
+  // default spawn if nothing found
   char.x = startX * TILE_SIZE;
   char.y = 0;
 }
 
-// initialize spawnsss
+// initialize characters
 spawnCharacter(characters.firey, 0);
 spawnCharacter(characters.leafy, 1);
 
+// switch active character
 export function switchCharacter(name) {
   if (characters[name]) gameState.activeCharacter = characters[name];
 }
