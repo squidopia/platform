@@ -9,33 +9,38 @@ export const gameState = {
   activeCharacter: characters.firey
 };
 
-// Spawn a character at the first spawn tile (30) in the given column, or fallback
-export function spawnCharacter(char, startX = 0) {
+// --- Better spawn function ---
+export function spawnCharacter(char) {
+  // Look for the first spawn tile (30) anywhere
   for (let y = 0; y < level.length; y++) {
-    const tile = getTile(startX * TILE_SIZE, y * TILE_SIZE);
-    if (tile === 30) { // spawn tile
-      char.x = startX * TILE_SIZE + (TILE_SIZE - char.width)/2;
-      char.y = y * TILE_SIZE;
-      return;
+    for (let x = 0; x < level[y].length; x++) {
+      if (level[y][x] === 30) {
+        char.x = x * TILE_SIZE + (TILE_SIZE - char.width)/2;
+        char.y = y * TILE_SIZE;
+        return;
+      }
     }
   }
 
   // fallback: empty above solid
   for (let y = 0; y < level.length; y++) {
-    if (level[y][startX] === 0 && level[y+1] && level[y+1][startX] >= 10 && level[y+1][startX] <= 13) {
-      char.x = startX * TILE_SIZE + (TILE_SIZE - char.width)/2;
-      char.y = y * TILE_SIZE;
-      return;
+    for (let x = 0; x < level[y].length; x++) {
+      if (level[y][x] === 0 && level[y+1] && level[y+1][x] >= 10 && level[y+1][x] <= 13) {
+        char.x = x * TILE_SIZE + (TILE_SIZE - char.width)/2;
+        char.y = y * TILE_SIZE;
+        return;
+      }
     }
   }
 
-  char.x = startX * TILE_SIZE;
+  // default fallback
+  char.x = 0;
   char.y = 0;
 }
 
 // Initialize spawns
-spawnCharacter(characters.firey, 0);
-spawnCharacter(characters.leafy, 1);
+spawnCharacter(characters.firey);
+spawnCharacter(characters.leafy);
 
 export function switchCharacter(name) {
   if (characters[name]) gameState.activeCharacter = characters[name];
