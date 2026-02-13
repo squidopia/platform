@@ -1,11 +1,12 @@
 import { getTile, TILE_SIZE } from './level.js';
-import { activeCharacter } from './characters.js';
+import { gameState } from './characters.js';
 
 const keys = {};
 window.addEventListener("keydown", e => keys[e.key] = true);
 window.addEventListener("keyup", e => keys[e.key] = false);
 
-export function updateControls(char) {
+export function updateControls() {
+  const char = gameState.activeCharacter;
   char.vx = 0;
   if (keys["ArrowLeft"]) char.vx = -char.speed;
   if (keys["ArrowRight"]) char.vx = char.speed;
@@ -15,14 +16,16 @@ export function updateControls(char) {
   }
 }
 
-export function moveCharacter(char) {
-  // horizontal movement
+export function moveCharacter() {
+  const char = gameState.activeCharacter;
+
+  // horizontal
   let newX = char.x + char.vx;
   if (!isColliding(char, newX, char.y)) char.x = newX;
   else char.vx = 0;
 
-  // gravity & vertical movement
-  char.vy += 1;
+  // vertical
+  char.vy += 1; // gravity
   let newY = char.y + char.vy;
   if (!isColliding(char, char.x, newY)) {
     char.y = newY;
