@@ -26,20 +26,19 @@
   <button id="resizeBtn">Resize Map</button>
 
   <button id="copyBtn">Copy Level Array</button>
-  <p>Click a tile to select, then click/drag on the grid to draw. Clipboard copies 2D array directly!</p>
+  <p>Click a tile to select, then click/drag on the grid to draw. Tiles stay fixed size!</p>
 </div>
 
 <script>
 const canvas = document.getElementById("editor");
 const ctx = canvas.getContext("2d");
-const TILE_SIZE = 40;
 
+const TILE_SIZE = 64; // fixed size
 let ROWS = 12;
 let COLS = 20;
 canvas.width = COLS * TILE_SIZE;
 canvas.height = ROWS * TILE_SIZE;
 
-// Tile ID → color
 const TILE_TYPES = {
   0: "#87CEEB", // empty
   10: "#8B0000", // dark red
@@ -55,8 +54,9 @@ let currentTile = 10;
 let level = Array.from({length: ROWS}, () => Array(COLS).fill(0));
 let drawing = false;
 
-// --- Draw the grid ---
+// --- Draw grid ---
 function drawGrid() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
       ctx.fillStyle = TILE_TYPES[level[y][x]];
@@ -109,7 +109,7 @@ for (let key in TILE_TYPES) {
 
 // --- Copy to clipboard ---
 document.getElementById("copyBtn").addEventListener("click", async () => {
-  const arrayText = JSON.stringify(level, null, 2);
+  const arrayText = JSON.stringify(level); // compact 2D array
   try {
     await navigator.clipboard.writeText(arrayText);
     alert("Level array copied to clipboard!");
