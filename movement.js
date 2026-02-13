@@ -10,7 +10,7 @@ window.addEventListener("keydown", e => {
   if (e.key.toLowerCase() === "q") {
     // toggle between Firey and Leafy
     if (gameState.activeCharacter === characters.firey) gameState.activeCharacter = characters.leafy;
-    else gameState.activeCharacter = characters.firey;
+    else gameState.activeCharacter = characters.pin;
   }
 });
 
