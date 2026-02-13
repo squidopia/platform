@@ -38,7 +38,7 @@ export function moveCharacter() {
   const char = gameState.activeCharacter;
 
   // Apply gravity
-  const GRAVITY = char.inWater || char.inLava ? 0.3 : 1; // float slower in liquid
+  const GRAVITY = char.inWater || char.inLava ? 0.05 : 1; // float slower in liquid
   char.vy += GRAVITY;
 
   // Horizontal movement + collision
