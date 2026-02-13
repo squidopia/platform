@@ -20,7 +20,7 @@ export function drawLevel(cameraX, cameraY) {
       const tile = level[y][x];
       if (tile === 0) continue;
 
-      // Use the color map, default to pink for unknown tiles
+      // Use the color map, default to pink for unknown tilessss
       ctx.fillStyle = TILE_COLORS[tile] || "#FF69B4";
       ctx.fillRect(
         x * TILE_SIZE - cameraX,
