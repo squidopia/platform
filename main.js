@@ -18,9 +18,11 @@ const level = [
 ]; // 0 empty, 1 ground, 2 lava
 
 // --- CHARACTERS ---
-let firey = { x:100, y:100, vx:0, vy:0, width:48, height:48, speed:8, jumpHeight:4, hp:4, color:"orange", onGround:false };
-let leafy = { x:150, y:100, vx:0, vy:0, width:48, height:48, speed:9, jumpHeight:6, hp:3, color:"green", onGround:false };
-let activeCharacter = firey;
+const characters = {
+  firey: { x:100, y:100, vx:0, vy:0, width:48, height:48, speed:8, jumpHeight:18, hp:4, color:"orange", onGround:false },
+  leafy: { x:150, y:100, vx:0, vy:0, width:48, height:48, speed:9, jumpHeight:22, hp:3, color:"green", onGround:false }
+};
+let activeCharacter = characters.firey;
 
 const keys = {};
 window.addEventListener("keydown", e => keys[e.key] = true);
@@ -34,11 +36,10 @@ function getTile(x, y) {
   return level[ty][tx];
 }
 
-// --- COLLISION (smooth free movement) ---
+// --- COLLISION HANDLER ---
 function handleCollisions(char) {
   char.onGround = false;
-  
-  // check all tiles overlapping character
+
   const startX = Math.floor(char.x / TILE_SIZE);
   const endX = Math.floor((char.x + char.width) / TILE_SIZE);
   const startY = Math.floor(char.y / TILE_SIZE);
@@ -46,8 +47,7 @@ function handleCollisions(char) {
 
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
-      let tile = 0;
-      if (y >= 0 && y < level.length && x >= 0 && x < level[0].length) tile = level[y][x];
+      let tile = getTile(x*TILE_SIZE, y*TILE_SIZE);
       if (tile === 0) continue;
 
       const tileLeft = x * TILE_SIZE;
@@ -55,7 +55,7 @@ function handleCollisions(char) {
       const tileTop = y * TILE_SIZE;
       const tileBottom = tileTop + TILE_SIZE;
 
-      // check vertical collision first
+      // --- VERTICAL COLLISIONS ---
       if (char.x + char.width > tileLeft && char.x < tileRight) {
         if (char.vy > 0 && char.y + char.height > tileTop && char.y + char.height - char.vy <= tileTop) {
           char.y = tileTop - char.height;
@@ -67,7 +67,7 @@ function handleCollisions(char) {
         }
       }
 
-      // then horizontal collision
+      // --- HORIZONTAL COLLISIONS ---
       if (char.y + char.height > tileTop && char.y < tileBottom) {
         if (char.vx > 0 && char.x + char.width > tileLeft && char.x + char.width - char.vx <= tileLeft) {
           char.x = tileLeft - char.width;
@@ -78,13 +78,13 @@ function handleCollisions(char) {
         }
       }
 
-      // hazards
-      if (tile === 2 && char === leafy) char.hp = 0; // Leafy dies in lava
+      // --- HAZARDS ---
+      if (tile === 2) char.hp = 0; // any character dies in lava
     }
   }
 }
 
-// --- DRAW ---
+// --- DRAW LEVEL ---
 function drawLevel(cameraX, cameraY) {
   for (let y = 0; y < level.length; y++) {
     for (let x = 0; x < level[y].length; x++) {
@@ -96,44 +96,66 @@ function drawLevel(cameraX, cameraY) {
   }
 }
 
+// --- DRAW CHARACTERS ---
 function drawCharacter(char, cameraX, cameraY) {
   ctx.fillStyle = char.color;
   ctx.fillRect(char.x - cameraX, char.y - cameraY, char.width, char.height);
+
+  // draw HP bar
+  ctx.fillStyle = "red";
+  ctx.fillRect(char.x - cameraX, char.y - 10 - cameraY, char.width * (char.hp/4), 5);
 }
 
-// --- UPDATE ---
-function update() {
+// --- UPDATE PHYSICS ---
+function updateCharacter(char) {
   // horizontal movement
-  activeCharacter.vx = 0;
-  if (keys["ArrowLeft"]) activeCharacter.vx = -activeCharacter.speed;
-  if (keys["ArrowRight"]) activeCharacter.vx = activeCharacter.speed;
+  char.vx = 0;
+  if (keys["ArrowLeft"]) char.vx = -char.speed;
+  if (keys["ArrowRight"]) char.vx = char.speed;
 
   // jump
-  if (keys[" "] && activeCharacter.onGround) {
-    activeCharacter.vy = -activeCharacter.jumpHeight*10;
-    activeCharacter.onGround = false;
+  if (keys[" "] && char.onGround) {
+    char.vy = -char.jumpHeight;
+    char.onGround = false;
   }
 
   // gravity
-  activeCharacter.vy += 1; // gravity
+  char.vy += 1; // gravity
+
+  // friction
+  if (char.onGround) char.vx *= 0.8;
 
   // move
-  activeCharacter.x += activeCharacter.vx;
-  activeCharacter.y += activeCharacter.vy;
+  char.x += char.vx;
+  char.y += char.vy;
 
-  handleCollisions(activeCharacter);
+  handleCollisions(char);
 }
 
-// --- MAIN LOOP + CAMERA SCROLLING ---
+// --- SWITCH CHARACTER ---
+function switchCharacter(name) {
+  if (characters[name]) activeCharacter = characters[name];
+}
+
+// --- CAMERA ---
+function getCamera() {
+  const lerp = 0.1; // smooth camera
+  if (!getCamera.x) getCamera.x = activeCharacter.x - canvas.width/2;
+  if (!getCamera.y) getCamera.y = activeCharacter.y - canvas.height/2;
+
+  getCamera.x += ((activeCharacter.x - canvas.width/2) - getCamera.x) * lerp;
+  getCamera.y += ((activeCharacter.y - canvas.height/2) - getCamera.y) * lerp;
+  return {x: getCamera.x, y: getCamera.y};
+}
+
+// --- MAIN LOOP ---
 function loop() {
-  update();
+  updateCharacter(activeCharacter);
 
-  const cameraX = activeCharacter.x - canvas.width/2 + activeCharacter.width/2;
-  const cameraY = activeCharacter.y - canvas.height/2 + activeCharacter.height/2;
-
+  const camera = getCamera();
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawLevel(cameraX, cameraY);
-  drawCharacter(activeCharacter, cameraX, cameraY);
+  drawLevel(camera.x, camera.y);
+  for (let charKey in characters) drawCharacter(characters[charKey], camera.x, camera.y);
 
   requestAnimationFrame(loop);
 }
