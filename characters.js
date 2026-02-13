@@ -43,6 +43,8 @@ export function spawnCharacter(char) {
 // Initialize spawns
 spawnCharacter(characters.firey);
 spawnCharacter(characters.leafy);
+spawnCharacter(characters.pin);
+
 
 export function switchCharacter(name) {
   if (characters[name]) gameState.activeCharacter = characters[name];
