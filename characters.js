@@ -2,9 +2,9 @@ import { level, TILE_SIZE, getTile } from './level.js';
 
 // characters.js
 export const characters = {
-  firey: { name:"Firey", width:43, height:58, speed:4, jumpHeight:12, hp:4, image:"assets/firey.png", vx:0, vy:0, x:0, y:0, onGround:false },
-  leafy: { name:"Leafy", width:43, height:77, speed:5, jumpHeight:18, hp:3, image:"assets/leafy.png", vx:0, vy:0, x:0, y:0, onGround:false },
-  pin: { name:"Pin", width:43, height:68, speed:4, jumpHeight:14, hp:5, image:"assets/pin.png", vx:0, vy:0, x:0, y:0, onGround:false }
+  firey: { name:"Firey", width:47, height:64, speed:4, jumpHeight:12, hp:4, image:"assets/firey.png", vx:0, vy:0, x:0, y:0, onGround:false },
+  leafy: { name:"Leafy", width:47, height:85, speed:5, jumpHeight:16, hp:4, image:"assets/leafy.png", vx:0, vy:0, x:0, y:0, onGround:false },
+  pin: { name:"Pin", width:47, height:75, speed:4, jumpHeight:14, hp:4, image:"assets/pin.png", vx:0, vy:0, x:0, y:0, onGround:false }
 };
 
 
