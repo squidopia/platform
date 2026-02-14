@@ -65,22 +65,24 @@ export function drawCharacters(cameraX, cameraY) {
   for (let key in characters) {
     const char = characters[key];
 
+    // Determine if we should flip (moving left)
+    const flip = char.vx < 0;
+
+    ctx.save();
+    // Move origin to character center
+    ctx.translate(char.x - cameraX + char.width / 2, char.y - cameraY + char.height / 2);
+    ctx.scale(flip ? -1 : 1, 1); // flip if moving left
+
     if (char._img && char._img.complete) {
-      // Flip image if moving left
-      ctx.save();
-      ctx.translate(char.x - cameraX + char.width / 2, char.y - cameraY + char.height / 2);
-      ctx.scale(char.vx < 0 ? -1 : 1, 1); // flip horizontally
+      // draw image centered
       ctx.drawImage(char._img, -char.width / 2, -char.height / 2, char.width, char.height);
-      ctx.restore();
     } else {
-      // fallback rectangle (also flips if moving left)
-      ctx.save();
-      ctx.translate(char.x - cameraX + char.width / 2, char.y - cameraY + char.height / 2);
-      ctx.scale(char.vx < 0 ? -1 : 1, 1);
+      // fallback rectangle
       ctx.fillStyle = char.color || "gray";
       ctx.fillRect(-char.width / 2, -char.height / 2, char.width, char.height);
-      ctx.restore();
     }
+
+    ctx.restore();
 
     // HP bar
     ctx.fillStyle = "red";
@@ -91,3 +93,4 @@ export function drawCharacters(cameraX, cameraY) {
     ctx.strokeRect(char.x - cameraX, char.y - 10 - cameraY, char.width, 5);
   }
 }
+
