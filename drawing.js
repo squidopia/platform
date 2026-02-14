@@ -13,7 +13,7 @@ function loadImage(name, src) {
 }
 
 // Load your tile images here
-loadImage("grass", "./grass.png");
+loadImage("grass", "./assets/grass.png");
 
 // --- Tile definitions ---
 // use either:
