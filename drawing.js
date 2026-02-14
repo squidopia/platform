@@ -32,6 +32,7 @@ const TILES = {
 };
 
 // --- Draw the level ---
+// --- Draw the level (improved tiling, no gaps) ---
 export function drawLevel(cameraX, cameraY) {
   for (let y = 0; y < level.length; y++) {
     for (let x = 0; x < level[y].length; x++) {
@@ -40,8 +41,9 @@ export function drawLevel(cameraX, cameraY) {
 
       const def = TILES[tile];
 
-      const drawX = x * TILE_SIZE - cameraX;
-      const drawY = y * TILE_SIZE - cameraY;
+      // Snap positions to integers to prevent gaps
+      const drawX = Math.floor(x * TILE_SIZE - cameraX);
+      const drawY = Math.floor(y * TILE_SIZE - cameraY);
 
       if (def?.img && images[def.img]?.complete) {
         ctx.drawImage(images[def.img], drawX, drawY, TILE_SIZE, TILE_SIZE);
@@ -55,9 +57,9 @@ export function drawLevel(cameraX, cameraY) {
         ctx.fillStyle = "white";
         ctx.beginPath();
         ctx.arc(
-          drawX + TILE_SIZE/2,
-          drawY + TILE_SIZE/2,
-          TILE_SIZE/4,
+          drawX + TILE_SIZE / 2,
+          drawY + TILE_SIZE / 2,
+          TILE_SIZE / 4,
           0,
           Math.PI * 2
         );
@@ -66,6 +68,7 @@ export function drawLevel(cameraX, cameraY) {
     }
   }
 }
+
 
 // --- Draw characters ---
 export function drawCharacters(cameraX, cameraY) {
