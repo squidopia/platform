@@ -12,27 +12,24 @@ function loadImage(name, src) {
   images[name] = img;
 }
 
-// Load your tile images here
-loadImage("grass", "./assets/grass.png");
+// Load tile images
+loadImage("grass", "./assets/grass.png"); // example
+// Add more tile images here if needed
 
 // --- Tile definitions ---
-// use either:
-//   color: "#hex"
-//   img: "imageKey"
-
+// Use either color or image
 const TILES = {
-  10: { color: "#8B0000" }, // DO NOT CHANGE COLOR!!!
+  10: { color: "#8B0000" },
   11: { color: "#000000" },
   12: { color: "#8B4513" },
-  13: { img: "grass" },     // IMAGE TILE
+  13: { img: "grass" }, // image tile
   20: { color: "#FF4500" },
   21: { color: "#1E90FF" },
   22: { color: "#808080" },
-  30: { color: "#FFFF00" }
+  30: { color: "#FFFF00" } // spawn tile
 };
 
 // --- Draw the level ---
-// --- Draw the level (improved tiling, no gaps) ---
 export function drawLevel(cameraX, cameraY) {
   for (let y = 0; y < level.length; y++) {
     for (let x = 0; x < level[y].length; x++) {
@@ -56,41 +53,33 @@ export function drawLevel(cameraX, cameraY) {
       if (tile === 30) {
         ctx.fillStyle = "white";
         ctx.beginPath();
-        ctx.arc(
-          drawX + TILE_SIZE / 2,
-          drawY + TILE_SIZE / 2,
-          TILE_SIZE / 4,
-          0,
-          Math.PI * 2
-        );
+        ctx.arc(drawX + TILE_SIZE / 2, drawY + TILE_SIZE / 2, TILE_SIZE / 4, 0, Math.PI * 2);
         ctx.fill();
       }
     }
   }
 }
 
-
-// --- Draw characters ---
+// --- Draw characters with image flipping ---
 export function drawCharacters(cameraX, cameraY) {
   for (let key in characters) {
     const char = characters[key];
 
     if (char._img && char._img.complete) {
-      ctx.drawImage(
-        char._img,
-        char.x - cameraX,
-        char.y - cameraY,
-        char.width,
-        char.height
-      );
+      // Flip image if moving left
+      ctx.save();
+      ctx.translate(char.x - cameraX + char.width / 2, char.y - cameraY + char.height / 2);
+      ctx.scale(char.vx < 0 ? -1 : 1, 1); // flip horizontally
+      ctx.drawImage(char._img, -char.width / 2, -char.height / 2, char.width, char.height);
+      ctx.restore();
     } else {
-      ctx.fillStyle = "gray";
-      ctx.fillRect(
-        char.x - cameraX,
-        char.y - cameraY,
-        char.width,
-        char.height
-      );
+      // fallback rectangle (also flips if moving left)
+      ctx.save();
+      ctx.translate(char.x - cameraX + char.width / 2, char.y - cameraY + char.height / 2);
+      ctx.scale(char.vx < 0 ? -1 : 1, 1);
+      ctx.fillStyle = char.color || "gray";
+      ctx.fillRect(-char.width / 2, -char.height / 2, char.width, char.height);
+      ctx.restore();
     }
 
     // HP bar
