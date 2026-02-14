@@ -13,7 +13,7 @@ function loadImage(name, src) {
 }
 
 // Load your tile images here
-loadImage("grass.png", "./grass.png");
+loadImage("grass", "./grass.png");
 
 // --- Tile definitions ---
 // use either:
@@ -21,10 +21,10 @@ loadImage("grass.png", "./grass.png");
 //   img: "imageKey"
 
 const TILES = {
-  10: { color: "#9A2A2A" }, // slightly lighter dark red (your earlier tweak)
+  10: { color: "#8B0000" }, // DO NOT CHANGE COLOR!!!
   11: { color: "#000000" },
   12: { color: "#8B4513" },
-  13: { img: "grass.png" },     // IMAGE TILE
+  13: { img: "grass" },     // IMAGE TILE
   20: { color: "#FF4500" },
   21: { color: "#1E90FF" },
   22: { color: "#808080" },
