@@ -14,8 +14,8 @@ const PHYSICS = {
   airFriction: 0.6,
   liquidDrag: 0.8,
 
-  coyoteTime: 6,        // frames allowed to jump after leaving ground
-  jumpBufferTime: 6     // frames jump input is remembered
+  coyoteTime: 6,        
+  jumpBufferTime: 6     
 };
 
 const keys = {};
@@ -39,9 +39,10 @@ window.addEventListener("keydown", e => {
 // ===============================
 
 export function updateControls() {
+  // ONLY apply keyboard inputs to the character you are currently playing
   const char = gameState.activeCharacter;
+  if (!char || char.hp <= 0) return;
 
-  // Init timers if missing
   char.coyoteTimer ??= 0;
   char.jumpBufferTimer ??= 0;
 
@@ -59,69 +60,75 @@ export function updateControls() {
 }
 
 // ===============================
-// === MOVEMENT ==================
+// === MOVEMENT & PHYSICS ========
 // ===============================
 
 export function moveCharacter() {
-  const char = gameState.activeCharacter;
+  // We loop through EVERY character in the game so they all fall/collide
+  Object.values(characters).forEach(char => {
+    if (!char || char.hp <= 0) return;
 
-  char.inWater = false;
-  char.inLava = false;
+    // Reset environment flags for this frame
+    char.inWater = false;
+    char.inLava = false;
 
-  // Apply gravity
-  const gravity = (char.inWater || char.inLava)
-    ? PHYSICS.gravityLiquid
-    : PHYSICS.gravityNormal;
+    // 1. Calculate Environment (Check tiles before moving to set gravity)
+    updateEnvironmentFlags(char);
 
-  char.vy += gravity;
+    // 2. Apply Gravity
+    const gravity = (char.inWater || char.inLava)
+      ? PHYSICS.gravityLiquid
+      : PHYSICS.gravityNormal;
 
-  if (char.vy > PHYSICS.maxFallSpeed) {
-    char.vy = PHYSICS.maxFallSpeed;
-  }
+    char.vy += gravity;
 
-  // Coyote timer
-  if (char.onGround) {
-    char.coyoteTimer = PHYSICS.coyoteTime;
-  } else {
-    char.coyoteTimer--;
-  }
+    if (char.vy > PHYSICS.maxFallSpeed) {
+      char.vy = PHYSICS.maxFallSpeed;
+    }
 
-  // Jump execution
-  if (char.jumpBufferTimer > 0 && char.coyoteTimer > 0) {
-    char.vy = -char.jumpHeight;
-    char.onGround = false;
-    char.jumpBufferTimer = 0;
-    char.coyoteTimer = 0;
-  }
+    // 3. Coyote timer logic
+    if (char.onGround) {
+      char.coyoteTimer = PHYSICS.coyoteTime;
+    } else {
+      char.coyoteTimer--;
+    }
 
-  if (char.jumpBufferTimer > 0) {
-    char.jumpBufferTimer--;
-  }
+    // 4. Jump execution (If this char has a jump buffered)
+    if (char.jumpBufferTimer > 0 && char.coyoteTimer > 0) {
+      char.vy = -char.jumpHeight;
+      char.onGround = false;
+      char.jumpBufferTimer = 0;
+      char.coyoteTimer = 0;
+    }
 
-  // Horizontal move
-  moveAxis(char, char.vx, 0);
+    if (char.jumpBufferTimer > 0) {
+      char.jumpBufferTimer--;
+    }
 
-  // Vertical move
-  moveAxis(char, 0, char.vy);
+    // 5. Perform actual movement & collision
+    moveAxis(char, char.vx, 0); // X-axis
+    moveAxis(char, 0, char.vy); // Y-axis
 
-  // Friction
-  if (char.onGround) {
-    char.vx *= PHYSICS.groundFriction;
-  } else {
-    char.vx *= PHYSICS.airFriction;
-  }
+    // 6. Apply Friction
+    if (char.onGround) {
+      char.vx *= PHYSICS.groundFriction;
+    } else {
+      char.vx *= PHYSICS.airFriction;
+    }
 
-  // Liquid drag
-  if (char.inWater || char.inLava) {
-    char.vx *= PHYSICS.liquidDrag;
-    char.vy *= PHYSICS.liquidDrag;
-  }
+    // 7. Liquid drag
+    if (char.inWater || char.inLava) {
+      char.vx *= PHYSICS.liquidDrag;
+      char.vy *= PHYSICS.liquidDrag;
+    }
 
-  handleHazards(char);
+    // 8. Final Hazard Check (Spikes, Lava death, etc)
+    handleHazards(char);
+  });
 }
 
 // ===============================
-// === COLLISION =================
+// === COLLISION ENGINE ==========
 // ===============================
 
 function moveAxis(char, vx, vy) {
@@ -138,6 +145,7 @@ function moveAxis(char, vx, vy) {
   for (let ty = startY; ty <= endY; ty++) {
     for (let tx = startX; tx <= endX; tx++) {
       const tile = getTile(tx * TILE_SIZE, ty * TILE_SIZE);
+      // Logic for solid blocks (ID 10-13)
       if (tile >= 10 && tile <= 13) {
         collided = true;
       }
@@ -147,8 +155,9 @@ function moveAxis(char, vx, vy) {
   if (!collided) {
     char.x = newX;
     char.y = newY;
-    char.onGround = false;
+    if (vy !== 0) char.onGround = false; // If moving vertically and no collision, we aren't on ground
   } else {
+    // Collision response
     if (vy > 0) char.onGround = true;
     if (vy !== 0) char.vy = 0;
     if (vx !== 0) char.vx = 0;
@@ -156,8 +165,23 @@ function moveAxis(char, vx, vy) {
 }
 
 // ===============================
-// === HAZARDS ===================
+// === HAZARDS & ENVIRONMENT =====
 // ===============================
+
+function updateEnvironmentFlags(char) {
+  const startX = Math.floor(char.x / TILE_SIZE);
+  const endX = Math.floor((char.x + char.width - 1) / TILE_SIZE);
+  const startY = Math.floor(char.y / TILE_SIZE);
+  const endY = Math.floor((char.y + char.height - 1) / TILE_SIZE);
+
+  for (let y = startY; y <= endY; y++) {
+    for (let x = startX; x <= endX; x++) {
+      const tile = getTile(x * TILE_SIZE, y * TILE_SIZE);
+      if (tile === 20) char.inLava = true;
+      if (tile === 21) char.inWater = true;
+    }
+  }
+}
 
 function handleHazards(char) {
   const startX = Math.floor(char.x / TILE_SIZE);
@@ -173,21 +197,17 @@ function handleHazards(char) {
         case 20: // lava
           if (char.name.toLowerCase() !== "firey") {
             char.hp = 0;
-          } else {
-            char.inLava = true;
           }
           break;
 
         case 21: // water
           if (char.name.toLowerCase() === "firey") {
             char.hp = 0;
-          } else {
-            char.inWater = true;
           }
           break;
 
         case 22: // spikes
-          char.hp -= 1;
+          char.hp -= 0.1; // Slow drain or instant death? Adjust as needed!
           break;
       }
     }
