@@ -7,7 +7,7 @@ import { gameState, characters } from './characters.js';
 
 const PHYSICS = {
   gravityNormal: 0.85,
-  gravityLiquid: 0.03,
+  gravityLiquid: 0.08,
   maxFallSpeed: 15,
 
   groundFriction: 0.5,
