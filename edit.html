@@ -1,3 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Platformer Level Editor</title>
+<style>
+  body {
+    margin: 0;
+    display: flex;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f4f8;
+    color: #333;
+  }
+  #editor {
+    border: 2px solid #555;
+    background: #87CEEB;
+    cursor: crosshair;
+    image-rendering: pixelated;
+  }
+  #tilePalette {
+    margin-left: 20px;
+    padding: 10px;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    width: 240px;
+  }
+  .tile {
+    width: 36px;
+    height: 36px;
+    display: inline-block;
+    margin: 2px;
+    cursor: pointer;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .tile:hover {
+    border-color: #000;
+    transform: scale(1.05);
+  }
+  button, input, textarea {
+    margin-top: 10px;
+    display: block;
+    padding: 6px 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    border: 1px solid #aaa;
+    background: #e1e5ea;
+    transition: 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  button:hover, input:hover, textarea:hover { background: #d1d5da; }
+  h3 { margin-top: 0; text-align: center; }
+  label { display: block; margin-top: 10px; }
+  p { font-size: 0.9em; color: #555; }
+  textarea { font-family: monospace; resize: vertical; }
+</style>
+</head>
+<body>
+
+<canvas id="editor"></canvas>
+
+<div id="tilePalette">
+  <h3>Tile Palette</h3>
+  <div id="tiles"></div>
+
+  <label>Width: <input type="number" id="widthInput" min="5" max="100" value="20"></label>
+  <label>Height: <input type="number" id="heightInput" min="5" max="100" value="12"></label>
+  <button id="resizeBtn">Resize Map</button>
+
+  <button id="copyBtn">Copy Level Array</button>
+
+  <label>Paste level JSON:</label>
+  <textarea id="pasteArea" rows="6" placeholder='Paste JSON here'></textarea>
+  <button id="loadBtn">Load Level</button>
+
+  <p>Click a tile to select, then click or drag on the grid to draw. Tiles stay fixed size!</p>
+</div>
+
+<script>
 const canvas = document.getElementById("editor");
 const ctx = canvas.getContext("2d");
 
@@ -23,6 +105,7 @@ let currentTile = 10;
 let level = Array.from({length: ROWS}, () => Array(COLS).fill(0));
 let drawing = false;
 
+// --- Initialize canvas ---
 function initCanvas() {
   canvas.width = COLS * TILE_SIZE;
   canvas.height = ROWS * TILE_SIZE;
@@ -42,10 +125,9 @@ function drawGrid() {
   }
 }
 
-// --- Coordinate Helper (The "Secret Sauce") ---
+// --- Coordinate Helper ---
 function getTileCoords(e) {
   const rect = canvas.getBoundingClientRect();
-  // Calculate scale in case the canvas is CSS-resized
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
   const x = Math.floor(((e.clientX - rect.left) * scaleX) / TILE_SIZE);
@@ -61,61 +143,72 @@ function placeTile(e) {
   }
 }
 
-// --- Event Listeners ---
-canvas.addEventListener("mousedown", (e) => {
-  drawing = true;
-  placeTile(e);
-});
-
-canvas.addEventListener("mousemove", (e) => {
-  if (drawing) placeTile(e);
-});
-
+// --- Mouse events ---
+canvas.addEventListener("mousedown", (e) => { drawing = true; placeTile(e); });
+canvas.addEventListener("mousemove", (e) => { if(drawing) placeTile(e); });
 window.addEventListener("mouseup", () => drawing = false);
 
 // --- Palette Setup ---
 const tilesDiv = document.getElementById("tiles");
-Object.keys(TILE_TYPES).forEach(key => {
-  const div = document.createElement("div");
-  div.classList.add("tile");
-  div.style.backgroundColor = TILE_TYPES[key];
-  div.addEventListener("click", () => {
-    currentTile = parseInt(key);
-    // Visual feedback for selection
-    document.querySelectorAll('.tile').forEach(t => t.style.borderColor = '#ccc');
-    div.style.borderColor = '#000';
+function setupPalette() {
+  tilesDiv.innerHTML = "";
+  Object.keys(TILE_TYPES).forEach(key => {
+    const div = document.createElement("div");
+    div.classList.add("tile");
+    div.style.backgroundColor = TILE_TYPES[key];
+    if(parseInt(key) === currentTile) div.style.borderColor = '#000';
+    div.addEventListener("click", () => {
+      currentTile = parseInt(key);
+      document.querySelectorAll('.tile').forEach(t => t.style.borderColor = '#ccc');
+      div.style.borderColor = '#000';
+    });
+    tilesDiv.appendChild(div);
   });
-  tilesDiv.appendChild(div);
-});
+}
+setupPalette();
 
 // --- Copy Logic ---
 document.getElementById("copyBtn").addEventListener("click", () => {
-  const json = JSON.stringify(level);
-  const textArea = document.createElement("textarea");
-  textArea.value = json;
-  document.body.appendChild(textArea);
-  textArea.select();
-  document.execCommand("copy"); // Older but more reliable for local files than navigator.clipboard
-  document.body.removeChild(textArea);
-  alert("Level copied to clipboard! 🚀");
+  const json = JSON.stringify(level, null, 2);
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(json).then(()=> alert("Level copied! 🚀"));
+  } else {
+    const textArea = document.createElement("textarea");
+    textArea.value = json;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
+    alert("Level copied! 🚀");
+  }
 });
 
-// --- Load Logic (Fixed) ---
+// --- Normalize Level (fill missing spots with 0) ---
+function normalizeLevel(arr){
+  const height = arr.length;
+  const width = Math.max(...arr.map(r => r.length));
+  return Array.from({length: height}, (_, y) =>
+    Array.from({length: width}, (_, x) => (arr[y] && arr[y][x]) || 0)
+  );
+}
+
+// --- Load Logic ---
 document.getElementById("loadBtn").addEventListener("click", () => {
   const text = document.getElementById("pasteArea").value.trim();
-  if (!text) return;
-  try {
+  if(!text) return;
+  try{
     const loaded = JSON.parse(text);
-    if (Array.isArray(loaded) && Array.isArray(loaded[0])) {
-      level = loaded;
+    if(Array.isArray(loaded) && loaded.every(r=>Array.isArray(r))){
+      level = normalizeLevel(loaded);
       ROWS = level.length;
       COLS = level[0].length;
       document.getElementById("widthInput").value = COLS;
       document.getElementById("heightInput").value = ROWS;
       initCanvas();
-    }
-  } catch (e) {
-    alert("Whoops! That JSON looks a bit funky. Check your format.");
+      alert("Level loaded successfully! 🎉");
+    } else throw new Error();
+  } catch(e){
+    alert("Invalid JSON! Check your level format.");
   }
 });
 
@@ -123,8 +216,6 @@ document.getElementById("loadBtn").addEventListener("click", () => {
 document.getElementById("resizeBtn").addEventListener("click", () => {
   COLS = parseInt(document.getElementById("widthInput").value);
   ROWS = parseInt(document.getElementById("heightInput").value);
-  
-  // Create new array while preserving old data
   const newLevel = Array.from({length: ROWS}, (_, y) =>
     Array.from({length: COLS}, (_, x) => (level[y] && level[y][x]) || 0)
   );
@@ -132,5 +223,9 @@ document.getElementById("resizeBtn").addEventListener("click", () => {
   initCanvas();
 });
 
-// Start it up!
+// Start editor
 initCanvas();
+</script>
+
+</body>
+</html>
