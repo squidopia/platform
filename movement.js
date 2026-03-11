@@ -6,13 +6,13 @@ import { gameState, characters } from './characters.js';
 // ===============================
 
 const PHYSICS = {
-  gravityNormal: 0.85,
-  gravityLiquid: 0.08,
-  maxFallSpeed: 15,
+  gravityNormal: 0.8,
+  gravityLiquid: 0.1,
+  maxFallSpeed: 14,
 
-  groundFriction: 0.5,
-  airFriction: 0.6,
-  liquidDrag: 0.8,
+  groundFriction: 0.4,
+  airFriction: 0.7,
+  liquidDrag: 0.9,
 
   coyoteTime: 6,        
   jumpBufferTime: 6     
