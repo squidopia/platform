@@ -4,54 +4,58 @@
 <meta charset="UTF-8">
 <title>Platformer Level Editor</title>
 <style>
-  body { 
-    margin: 0; 
-    display: flex; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    background: #f0f4f8; 
+  body {
+    margin: 0;
+    display: flex;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f4f8;
     color: #333;
   }
-  #editor { 
-    border: 2px solid #555; 
-    background: #87CEEB; 
-    cursor: crosshair; 
-    image-rendering: pixelated; 
+  #editor {
+    border: 2px solid #555;
+    background: #87CEEB;
+    cursor: crosshair;
+    image-rendering: pixelated;
   }
-  #tilePalette { 
-    margin-left: 20px; 
-    padding: 10px; 
-    background: #fff; 
-    box-shadow: 0 0 10px rgba(0,0,0,0.1); 
-    border-radius: 10px; 
+  #tilePalette {
+    margin-left: 20px;
+    padding: 10px;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    width: 220px;
   }
-  .tile { 
-    width: 36px; 
-    height: 36px; 
-    display: inline-block; 
-    margin: 2px; 
-    cursor: pointer; 
-    border: 2px solid #ccc; 
-    border-radius: 6px; 
-    transition: all 0.2s; 
+  .tile {
+    width: 36px;
+    height: 36px;
+    display: inline-block;
+    margin: 2px;
+    cursor: pointer;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    transition: all 0.2s;
   }
-  .tile:hover { 
-    border-color: #000; 
-    transform: scale(1.05); 
+  .tile:hover {
+    border-color: #000;
+    transform: scale(1.05);
   }
-  button, input { 
-    margin-top: 10px; 
-    display: block; 
-    padding: 6px 10px; 
-    cursor: pointer; 
-    border-radius: 6px; 
-    border: 1px solid #aaa; 
-    background: #e1e5ea; 
-    transition: 0.2s; 
+  button, input, textarea {
+    margin-top: 10px;
+    display: block;
+    padding: 6px 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    border: 1px solid #aaa;
+    background: #e1e5ea;
+    transition: 0.2s;
+    width: 100%;
+    box-sizing: border-box;
   }
-  button:hover, input:hover { background: #d1d5da; }
+  button:hover, input:hover, textarea:hover { background: #d1d5da; }
   h3 { margin-top: 0; text-align: center; }
   label { display: block; margin-top: 10px; }
   p { font-size: 0.9em; color: #555; }
+  textarea { font-family: monospace; resize: vertical; }
 </style>
 </head>
 <body>
@@ -67,6 +71,11 @@
   <button id="resizeBtn">Resize Map</button>
 
   <button id="copyBtn">Copy Level Array</button>
+
+  <label>Paste level JSON:</label>
+  <textarea id="pasteArea" rows="6" placeholder='Paste JSON here'></textarea>
+  <button id="loadBtn">Load Level</button>
+
   <p>Click a tile to select, then click or drag on the grid to draw. Tiles stay fixed size!</p>
 </div>
 
@@ -74,31 +83,31 @@
 const canvas = document.getElementById("editor");
 const ctx = canvas.getContext("2d");
 
-const TILE_SIZE = 32; 
+const TILE_SIZE = 32;
 let ROWS = 12;
 let COLS = 20;
 canvas.width = COLS * TILE_SIZE;
 canvas.height = ROWS * TILE_SIZE;
 
-// --- New & updated tile types ---
+// --- Tile types ---
 const TILE_TYPES = {
-  0: "#87CEEB",   // empty (sky)
-  10: "#8B0000",  // dark red
-  11: "#000000",  // black
-  12: "#8B4513",  // brown
-  13: "#008000",  // green
-  20: "#FF4500",  // lava
-  21: "#1E90FF",  // water
-  22: "#808080",  // spikes
-  30: "#FFD700",  // gold block
-  31: "#FF69B4"   // pink platform
+  0: "#87CEEB",  // empty (sky)
+  10: "#8B0000", // dark red
+  11: "#000000", // black
+  12: "#8B4513", // brown
+  13: "#008000", // green
+  20: "#FF4500", // lava
+  21: "#1E90FF", // water
+  22: "#808080", // spikes
+  30: "#FFD700", // gold block
+  31: "#FF69B4"  // pink platform
 };
 
 let currentTile = 10;
 let level = Array.from({length: ROWS}, () => Array(COLS).fill(0));
 let drawing = false;
 
-// --- Draw grid with cleaner lines ---
+// --- Draw grid ---
 function drawGrid() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   for (let y = 0; y < ROWS; y++) {
@@ -129,7 +138,6 @@ canvas.addEventListener("mousedown", e => {
   const y = Math.floor((e.clientY - rect.top)/TILE_SIZE);
   placeTile(x, y);
 });
-
 canvas.addEventListener("mousemove", e => {
   if (!drawing) return;
   const rect = canvas.getBoundingClientRect();
@@ -137,7 +145,6 @@ canvas.addEventListener("mousemove", e => {
   const y = Math.floor((e.clientY - rect.top)/TILE_SIZE);
   placeTile(x, y);
 });
-
 canvas.addEventListener("mouseup", () => drawing = false);
 canvas.addEventListener("mouseleave", () => drawing = false);
 
@@ -160,6 +167,34 @@ document.getElementById("copyBtn").addEventListener("click", async () => {
     alert("Level array copied to clipboard!");
   } catch(e) {
     alert("Failed to copy. Open in secure context (https or localhost).");
+  }
+});
+
+// --- Load level from pasted JSON ---
+document.getElementById("loadBtn").addEventListener("click", () => {
+  const text = document.getElementById("pasteArea").value;
+  try {
+    const loaded = JSON.parse(text);
+
+    if (!Array.isArray(loaded) || !loaded.every(row => Array.isArray(row))) {
+      throw new Error("Invalid level structure");
+    }
+
+    ROWS = loaded.length;
+    COLS = loaded[0].length;
+    level = loaded;
+
+    canvas.width = COLS * TILE_SIZE;
+    canvas.height = ROWS * TILE_SIZE;
+    drawGrid();
+
+    // auto-update width & height inputs
+    document.getElementById("widthInput").value = COLS;
+    document.getElementById("heightInput").value = ROWS;
+
+    alert("Level loaded successfully!");
+  } catch (err) {
+    alert("Failed to load level: " + err.message);
   }
 });
 
